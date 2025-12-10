@@ -23,6 +23,21 @@ contract UniswapV2Arb1 {
         uint256 minProfit;
     }
 
+    function _swap(SwapParams memory params) internal returns (uint256 amountOut) {
+        address[] memory path = new address[](2);
+        path[0] = params.tokenIn;
+        path[1] = params.tokenOut;
+        IERC20(params.tokenIn).approve(params.router0, type(uint256).max);
+        uint[] memory amounts = IUniswapV2Router02(params.router0).swapExactTokensForTokens(params.amountIn, 0, path, address(this), block.timestamp + 3000);
+
+        path[0] = params.tokenOut;
+        path[1] = params.tokenIn;
+        IERC20(params.tokenOut).approve(params.router1, type(uint256).max);
+        amounts =IUniswapV2Router02(params.router1).swapExactTokensForTokens(amounts[1], params.amountIn, path, address(this), block.timestamp + 3000);
+
+        amountOut = amounts[1];
+    }
+
     // Exercise 1
     // - Execute an arbitrage between router0 and router1
     // - Pull tokenIn from msg.sender
@@ -30,6 +45,10 @@ contract UniswapV2Arb1 {
     function swap(SwapParams calldata params) external {
         // Write your code here
         // Don’t change any other code
+        IERC20(params.tokenIn).transferFrom(msg.sender, address(this), params.amountIn);
+        uint256 amountOut = _swap(params);
+        require(amountOut >= params.amountIn + params.minProfit, "Insufficient profit");
+        IERC20(params.tokenIn).transfer(msg.sender, amountOut);
     }
 
     // Exercise 2
@@ -46,6 +65,10 @@ contract UniswapV2Arb1 {
     {
         // Write your code here
         // Don’t change any other code
+        (uint256 amount0Out, uint256 amount1Out) = isToken0 ? (params.amountIn, uint256(0)) : (uint256(0), params.amountIn);
+
+        bytes memory data = abi.encode(msg.sender, pair, params);
+        IUniswapV2Pair(pair).swap(amount0Out, amount1Out, address(this), data);
     }
 
     function uniswapV2Call(
@@ -56,5 +79,19 @@ contract UniswapV2Arb1 {
     ) external {
         // Write your code here
         // Don’t change any other code
+        (address caller, address pair, SwapParams memory params) = abi.decode(data, (address, address, SwapParams));
+        require(sender == address(this), "Not sender");
+        require(msg.sender == address(pair), "Not pair");
+
+        _swap(params);
+
+        uint256 amount = amount0Out > 0 ? amount0Out : amount1Out;
+        uint256 fee = amount * 3 / 997 + 1;
+
+        uint256 profit = IERC20(params.tokenIn).balanceOf(address(this)) - amount - fee;
+        require(profit >= params.minProfit, "Insufficient profit");
+
+        IERC20(params.tokenIn).transfer(address(pair), amount + fee);
+        IERC20(params.tokenIn).transfer(caller, profit);
     }
 }

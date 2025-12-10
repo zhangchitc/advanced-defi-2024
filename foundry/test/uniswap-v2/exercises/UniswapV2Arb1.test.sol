@@ -81,7 +81,7 @@ contract UniswapV2Arb1Test is Test {
         uint256 bal0 = dai.balanceOf(user);
         vm.prank(user);
         arb.flashSwap(
-            UNISWAP_V2_PAIR_DAI_MKR,
+            0x9bD82673C50acB4A3b883d61e070a3C8D9b08E10,
             true,
             UniswapV2Arb1.SwapParams({
                 router0: UNISWAP_V2_ROUTER_02,

@@ -51,7 +51,11 @@ contract UniswapV2SwapTest is Test {
         uint256 amountIn = 1e18;
         uint256 amountOutMin = 1;
 
-        // Write your code here
+        vm.prank(user);
+        uint256[] memory amounts = router.swapExactTokensForTokens(amountIn, amountOutMin, path, user, block.timestamp);
+        console2.log("WETH", amounts[0]);
+        console2.log("DAI", amounts[1]);
+        console2.log("MKR", amounts[2]);
         // Don’t change any other code
 
         assertGe(mkr.balanceOf(user), amountOutMin, "MKR balance of user");
@@ -68,7 +72,11 @@ contract UniswapV2SwapTest is Test {
         uint256 amountOut = 0.1 * 1e18;
         uint256 amountInMax = 1e18;
 
-        // Write your code here
+        vm.prank(user);
+        uint256[] memory amounts = router.swapTokensForExactTokens(amountOut, amountInMax, path, user, block.timestamp);
+        console2.log("WETH", amounts[0]);
+        console2.log("DAI", amounts[1]);
+        console2.log("MKR", amounts[2]);
         // Don’t change any other code
 
         assertEq(mkr.balanceOf(user), amountOut, "MKR balance of user");
